@@ -3,46 +3,52 @@ package database
 import (
 	"GraphQL-API/dbmodel"
 	"fmt"
+	"github.com/joho/godotenv"
+	"os"
+
 	_ "github.com/go-sql-driver/mysql"
-	"gorm.io/gorm"
+	"github.com/jinzhu/gorm"
 )
 
-// a variable to store database connection
 var DBInstance *gorm.DB
 
-// Var for error handling
 var err error
 
-// the db connection string
-var CONNECTION_STRING string = "db_username:your_user_password@tcp(localhost:3306)/?charset=utf8&parseTime=True&loc=Local"
+//var CONNECTION_STRING string = "root:root@tcp(localhost:3306)/?charset=utf8&parseTime=True&loc=Local"
 
-// connecting to the db
 func ConnectDB() {
-	// pass the db connection string
-	ConnectionURI := CONNECTION_STRING
-	// check for db connection
+
+	errEnv := godotenv.Load()
+	if errEnv != nil {
+		panic("Failed to load env file")
+	}
+
+	dbUser := os.Getenv("DB_USER")
+	dbPass := os.Getenv("MYSQL_ROOT_PASSWORD")
+	dbHost := os.Getenv("DB_HOST")
+	dbName := os.Getenv("DB_NAME")
+
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:3306)/%s?charset=utf8&parseTime=True&loc=Local", dbUser, dbPass, dbHost, dbName)
+
+	ConnectionURI := dsn
+
 	DBInstance, err = gorm.Open("mysql", ConnectionURI)
 	if err != nil {
 		fmt.Println(err)
-		// if the connection was unsuccessful
 		panic("Database connection attempt was unsuccessful.....")
 	} else {
-		// if the connection was successful
 		fmt.Println("Database Connected successfully.....")
 	}
-	// log all database operations performed by this connection
+
 	DBInstance.LogMode(true)
 }
 
 func CreateDB() {
-	// Create a database
 	DBInstance.Exec("CREATE DATABASE IF NOT EXISTS Blog_Posts")
-	// make the database available to this connection
 	DBInstance.Exec("USE Blog_Posts")
 }
 
 func MigrateDB() {
-	// migrate and sync the model to create a db table
 	DBInstance.AutoMigrate(&dbmodel.Post{})
 	fmt.Println("Database migration completed....")
 }
