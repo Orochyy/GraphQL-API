@@ -1,29 +1,33 @@
-version: '3.8'
+version: '3.7'
+
+volumes:
+  api_db_data:
 
 services:
-  web:  #sercises  name (app)
-    container_name: web   #container name
-    build:
-      context: . # ми вказуємо що використовуємо всі файли
-      # dockerfile: Dockerfile
-    image: go_main_webapp # image name
-    command: /bin/sh -c "go run server.go" # run app
-    env_file: .env.development # we use .env file
+  # MySQL db
+  go_api_database:
+    image: mysql
+    container_name: go_key_database
     ports:
-      - 8080:8080  # we use 8080:8080 ports
+      - 3306:3306
+    env_file: .env
     volumes:
-      - .:/app # ми в середину докера зберігаємо свої файли. І це все лежить по path
-    depends_on:  # зависимость mongo/mysql/postgress ets
-      - db     # db name
-  db:  #service name (db)
-    container_name: db #container name
-    image: mysql:latest  # image name (образ)
-    env_file: .env.development  # we use .env file
-    ports: # ports
-      - 3306:3306 # we use 3306:3306  ports
-    volumes: # we save all files
-      - data-sql:/var/lib/mysql  # path where we save files
+      - api_db_data:/var/run/mysql/
 
-volumes: # save files
-  data-sql: # service name
-    driver: local  # де це все буде на локалці чи ще десь
+
+  # api
+  go_key_api:
+    image: go_api_key_bin
+    container_name: go_api_key
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: prod
+    env_file: .env
+    ports:
+      - ${PUBLIC_PORT}:${LISTEN_PORT}
+    expose:
+      - ${PUBLIC_PORT}
+    pid: "host"
+    depends_on:
+      - go_api_database
