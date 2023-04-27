@@ -1,7 +1,9 @@
 package main
 
 import (
+	"GraphQL-API/database"
 	"GraphQL-API/graph"
+	"GraphQL-API/graph/generated"
 	"log"
 	"net/http"
 	"os"
@@ -18,8 +20,13 @@ func main() {
 		port = defaultPort
 	}
 
-	srv := handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{}}))
+	database.ConnectDB()
+	database.CreateDB()
+	database.MigrateDB()
 
+	srv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{
+		Database: database.DBInstance,
+	}}))
 	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
 	http.Handle("/query", srv)
 
